@@ -1,235 +1,62 @@
-Counter Module – Design Notes
+Counter Module – README
+Description
 
-Overview
+I designed a counter module which counts up by 1 on every clock cycle when it is in the running state. The counter can be started using the start input and stopped using the stop input. The reset input clears the counter to 0 and also stops the counter.
 
-I designed a clock-controlled counter using a running state to remember whether the counter should continue counting.
+The priority of the inputs is:
 
-The counter has four main behaviors:
+Reset > Stop > Start
 
-Start: starts the counter.
+I used a separate running variable to remember whether the counter is currently running or stopped. This is necessary because start and stop are pulses and do not remain active.
 
-Stop: stops the counter without clearing the current count.
+When start is pulsed, running becomes 1 and the counter starts counting. When stop is pulsed, running becomes 0 and the counter stops without changing its current value. When reset is pulsed, both count and running are set to 0.
 
-Reset: clears the count to 0 and stops the counter.
+I also added a condition to check whether the count has reached MAX. If count reaches MAX, it wraps around to 0 on the next cycle and continues counting.
 
-MAX: when the count reaches MAX, it wraps back to 0 and keeps counting.
+I used always_ff @(posedge clk) because the counter and running state are sequential logic controlled by the clock.
 
-The priority is:
+Reference Code Comparison
 
-reset > stop > start
+The reference implementation uses additional variables such as temp, next_temp, state, and next_state. It separates the current values from their next values.
 
-How My Logic Works
+My implementation is simpler and directly uses count and running. I felt this was easier to understand because the running variable directly represents whether the counter should be counting or stopped.
 
-I used a separate 1-bit running signal because start and stop are pulses. The pulse changes the stored state instead of having to stay high.
+The basic logic of my design is:
 
-start  → running = 1
-stop   → running = 0
-reset  → running = 0 and count = 0
+Start → running = 1 → count increases every clock
 
-When running is active, the counter increments on every clock cycle.
+Stop → running = 0 → count holds
 
-For the MAX condition:
+Reset → count = 0 and running = 0
 
-if count == MAX
-    count = 0
-else
-    count = count + 1
+count = MAX → count becomes 0 and continues
 
-I used:
+Performance and Area
 
-always_ff @(posedge clk)
+My synthesis results were:
 
-because the counter and running state are sequential signals controlled by the clock.
+Wires: 60
+Cells: 229
+Area: 728.20 µm²
+Maximum Frequency: 543.5 MHz
+Critical Path: 1.840 ns
+Performance: Beats 73.5%
+Area: Beats 9.6%
 
-My Approach vs Reference
+The reference implementation had:
 
-My implementation keeps the design simple using mainly:
+Wires: 59
+Cells: 181
+Area: 645.62 µm²
+Maximum Frequency: 520.8 MHz
+Critical Path: 1.920 ns
+Performance: Beats 65.2%
+Area: Beats 57.1%
 
-count
+Compared with the reference, my design uses slightly more area, with an area of 728.20 µm² compared to 645.62 µm². It also uses more cells, 229 compared to 181.
 
-running
+However, my design has better performance. Its maximum frequency is 543.5 MHz, compared with 520.8 MHz for the reference. The critical path is also lower at 1.840 ns, compared with 1.920 ns.
 
-start
+Therefore, my implementation has a trade-off: it uses more area but provides better performance.
 
-stop
-
-reset
-
-I did not use separate temp, next_temp, or next_state signals.
-
-The reference implementation uses:
-
-state
-
-temp
-
-next_state
-
-next_temp
-
-The reference separates next-state/next-value logic from the stored values, while my implementation directly uses the running state and count.
-
-Conceptually:
-
-My design:
-start / stop / reset
-        ↓
-     running
-        ↓
-      count
-
-Reference:
-current state/value
-        ↓
-next state/value
-        ↓
-registered state/value
-
-Synthesis Results
-
-My Design
-
-Metric
-
-Result
-
-Wires
-
-60
-
-Cells
-
-229
-
-Area
-
-728.20 µm²
-
-Max Frequency
-
-543.5 MHz
-
-Critical Path
-
-1.840 ns
-
-Area Score
-
-Beats 9.6%
-
-Performance Score
-
-Beats 73.5%
-
-Reference Design
-
-Metric
-
-Result
-
-Wires
-
-59
-
-Cells
-
-181
-
-Area
-
-645.62 µm²
-
-Max Frequency
-
-520.8 MHz
-
-Critical Path
-
-1.920 ns
-
-Area Score
-
-Beats 57.1%
-
-Performance Score
-
-Beats 65.2%
-
-Direct Comparison
-
-Metric
-
-My Design
-
-Reference
-
-Difference
-
-Wires
-
-60
-
-59
-
-+1
-
-Cells
-
-229
-
-181
-
-+48
-
-Area
-
-728.20 µm²
-
-645.62 µm²
-
-+82.58 µm²
-
-Max Frequency
-
-543.5 MHz
-
-520.8 MHz
-
-+22.7 MHz
-
-Critical Path
-
-1.840 ns
-
-1.920 ns
-
--0.080 ns
-
-Analysis
-
-My design uses more hardware than the reference:
-
-Area: 728.20 µm² vs 645.62 µm²
-
-Cells: 229 vs 181
-
-Wires: 60 vs 59
-
-However, my design has better timing performance:
-
-Maximum frequency: 543.5 MHz vs 520.8 MHz
-
-Critical path: 1.840 ns vs 1.920 ns
-
-Performance score: 73.5% vs 65.2%
-
-Therefore, my implementation makes a trade-off of higher area for better performance.
-
-Conclusion
-
-I chose a simple running state-based approach instead of the reference's separate next-state and next-value signals. This made the logic easier for me to understand while still implementing the required behavior.
-
-The synthesis results show that my design is faster than the reference, but it uses more area.
-
-My Design   → More area, better performance
-Reference   → Less area, lower performance
+Overall, I used a simpler state-based approach with running, while the reference used separate next-state and next-value variables. My approach was easier for me to understand and still achieved better timing performance in the synthesis results.
